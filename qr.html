@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brothers Collection | Smart Product Info</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { primary: '#111111', accent: '#d4af37', light: '#fafafa', darkgray: '#222222' },
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #111; color: #fafafa; }
+        .gold-gradient { background: linear-gradient(135deg, #d4af37 0%, #aa8c2c 100%); }
+        .gold-text { color: #d4af37; }
+        .glass-panel {
+            background: rgba(34, 34, 34, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #d4af37;
+            border-radius: 50%; width: 50px; height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Reverse Clock Animation */
+        .reverse-clock {
+            display: inline-block;
+            animation: spin-reverse 2s linear infinite;
+        }
+        @keyframes spin-reverse { 0% { transform: rotate(0deg); } 100% { transform: rotate(-360deg); } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans">
+
+    <!-- Header -->
+    <header class="bg-black py-4 px-6 border-b border-accent/30 shadow-lg sticky top-0 z-50 flex justify-between items-center z-50">
+        <a href="index.html" class="text-xl md:text-2xl font-bold uppercase tracking-wider flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
+            <i class="fa-solid fa-crown gold-text"></i>
+            <span>Brothers <span class="gold-text">Collection</span></span>
+        </a>
+        <div id="header-status" class="text-xs md:text-sm text-gray-400 hidden md:block">
+            <i class="fa-solid fa-circle-notch fa-spin text-accent"></i> Loading...
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow flex items-center justify-center p-4 relative" id="main-content">
+        
+        <!-- Loading View -->
+        <div id="loading-view" class="flex flex-col items-center justify-center gap-4 py-20">
+            <div class="spinner"></div>
+            <p class="gold-text animate-pulse font-semibold">Connecting to Server...</p>
+        </div>
+
+        <!-- ================= CUSTOMER PRODUCT VIEW ================= -->
+        <div id="product-view" class="hidden w-full max-w-md mx-auto my-4">
+            <div class="glass-panel rounded-2xl overflow-hidden shadow-2xl transform transition-all">
+                <div class="relative h-80 bg-white flex items-center justify-center">
+                    <div class="absolute top-4 left-4 z-10 bg-black/80 text-accent font-bold px-3 py-1 rounded shadow-lg text-xs border border-accent/30 flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group"></i> <span id="p-rack-id">SLOT</span>
+                    </div>
+                    <img id="p-image" src="" alt="Product" class="max-w-full max-h-full object-contain p-4">
+                    <div id="p-discount-badge" class="absolute top-4 right-4 bg-red-600 text-white font-bold px-3 py-1 rounded-full shadow-lg text-sm z-10">
+                        % OFF
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-2">
+                        <h1 id="p-title" class="text-2xl font-bold text-white">Product Name</h1>
+                    </div>
+                    
+                    <!-- Timer & Offer Banner -->
+                    <div id="offer-container" class="mb-4 bg-red-900/20 border border-red-500/30 rounded-lg p-3 hidden flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <span id="offer-name" class="text-red-400 font-bold text-xs uppercase tracking-wide flex items-center gap-1">
+                                <i class="fa-solid fa-fire"></i> <span>Special Offer</span>
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <i class="fa-regular fa-clock text-accent reverse-clock" id="timer-icon"></i>
+                                <span id="offer-timer" class="text-white font-mono text-sm font-bold bg-red-600 px-2 py-0.5 rounded shadow-lg">
+                                    00:00
+                                </span>
+                            </div>
+                        </div>
+                        <p id="offer-warning" class="text-[10px] text-gray-400 text-center leading-tight mt-1 border-t border-red-500/20 pt-2 italic">
+                            * Note: Once this timer reaches zero, the special offer will expire and the item will revert to its original MRP.
+                        </p>
+                    </div>
+
+                    <!-- Pricing Area -->
+                    <div id="pricing-container" class="mt-4 flex flex-wrap items-center gap-4 pb-4 border-b border-gray-700">
+                        <div class="text-3xl font-bold gold-text" id="p-showroom-price">₹0</div>
+                        <div class="flex flex-col" id="mrp-container">
+                            <span class="text-xs text-gray-400 uppercase tracking-widest" id="mrp-label">MRP</span>
+                            <span id="p-actual-price" class="text-lg text-gray-500 line-through">₹0</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pb-4">
+                        <h3 class="text-accent text-sm uppercase tracking-wider font-semibold mb-2">Product Details</h3>
+                        <p id="p-description" class="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
+                            Description goes here...
+                        </p>
+                    </div>
+
+                    <!-- Explore More Button -->
+                    <button onclick="window.location.href='explore.html'" class="w-full mt-2 gold-gradient text-black font-bold py-3 rounded-lg hover:opacity-90 transition transform hover:scale-[1.02] flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-box-open"></i> Explore More Products
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= ADMIN LOGIN VIEW ================= -->
+        <div id="login-view" class="hidden w-full max-w-sm mx-auto">
+            <div class="glass-panel p-8 rounded-2xl shadow-2xl text-center border-t-4 border-t-accent">
+                <i class="fa-solid fa-lock text-4xl gold-text mb-4"></i>
+                <h2 class="text-2xl font-bold text-white mb-6">Admin Access</h2>
+                <form id="login-form" class="flex flex-col gap-4">
+                    <input type="email" id="login-email" placeholder="Admin Email" required class="w-full bg-darkgray border border-gray-600 rounded p-3 text-white focus:border-accent focus:outline-none">
+                    <input type="password" id="login-password" placeholder="Password" required class="w-full bg-darkgray border border-gray-600 rounded p-3 text-white focus:border-accent focus:outline-none">
+                    <button type="submit" class="w-full gold-gradient text-black font-bold py-3 rounded mt-2 hover:opacity-90 transition">
+                        Login to Dashboard
+                    </button>
+                    <p id="login-error" class="text-red-500 text-sm hidden mt-2">Invalid credentials.</p>
+                </form>
+            </div>
+        </div>
+
+        <!-- ================= ADMIN DASHBOARD VIEW ================= -->
+        <div id="admin-view" class="hidden w-full max-w-6xl mx-auto flex flex-col md:flex-row gap-6">
+            
+            <!-- Add/Edit Form -->
+            <div class="w-full md:w-1/3">
+                <div class="glass-panel p-6 rounded-2xl sticky top-24 border-t-2 border-t-accent">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold gold-text" id="form-title"><i class="fa-solid fa-plus-circle mr-2"></i> Setup Slot</h2>
+                        <button onclick="logoutAdmin()" class="text-xs text-red-400 hover:text-red-500 underline"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+                    </div>
+                    <form id="product-form" class="flex flex-col gap-4">
+                        <div>
+                            <label class="block text-xs text-accent font-bold mb-1 uppercase tracking-wider">Slot / Rack ID *</label>
+                            <input type="text" id="a-rack-id" required placeholder="e.g., RACK-1" class="w-full bg-black border border-accent/50 rounded p-2 text-white font-bold focus:border-accent focus:outline-none uppercase">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1 uppercase tracking-wider">Product Name</label>
+                            <input type="text" id="a-name" required class="w-full bg-darkgray border border-gray-600 rounded p-2 text-white focus:border-accent focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1 uppercase tracking-wider">Product Photo (Upload)</label>
+                            <input type="file" id="a-image-file" accept="image/*" class="w-full bg-darkgray border border-gray-600 rounded p-1 text-white focus:border-accent focus:outline-none text-sm file:mr-4 file:py-2 file:px-4 file:rounded file:bg-accent file:text-black file:border-0 file:font-bold cursor-pointer">
+                            <input type="hidden" id="a-image-base64">
+                            <div id="image-preview-container" class="hidden mt-3 text-center">
+                                <img id="image-preview" src="" class="w-32 h-32 object-cover rounded border border-gray-600 bg-white mx-auto">
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-1/2">
+                                <label class="block text-xs text-gray-400 mb-1 uppercase tracking-wider">Actual MRP</label>
+                                <input type="number" id="a-actual-price" required min="0" class="w-full bg-darkgray border border-gray-600 rounded p-2 text-white focus:border-accent focus:outline-none">
+                            </div>
+                            <div class="w-1/2">
+                                <label class="block text-xs text-gray-400 mb-1 uppercase tracking-wider">Our Price</label>
+                                <input type="number" id="a-showroom-price" required min="0" class="w-full bg-darkgray border border-gray-600 rounded p-2 text-white focus:border-accent focus:outline-none">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1 uppercase tracking-wider">Product Details</label>
+                            <textarea id="a-description" required rows="4" class="w-full bg-darkgray border border-gray-600 rounded p-2 text-white focus:border-accent focus:outline-none text-sm"></textarea>
+                        </div>
+                        <div class="flex gap-2 mt-2">
+                            <button type="submit" class="flex-1 gold-gradient text-black font-bold py-2 rounded hover:opacity-90 transition">Save</button>
+                            <button type="button" onclick="resetForm()" class="px-4 bg-gray-600 text-white font-bold py-2 rounded hover:bg-gray-500 transition">Clear</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Products List -->
+            <div class="w-full md:w-2/3">
+                <div class="glass-panel p-6 rounded-2xl border-t-2 border-t-accent">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold gold-text"><i class="fa-solid fa-layer-group mr-2"></i> Inventory Manager</h2>
+                        <span id="product-count" class="bg-accent text-black px-3 py-1 rounded-full text-xs font-bold">0 Items</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-gray-700 text-gray-400 text-xs uppercase tracking-wider">
+                                    <th class="pb-3 px-2">Slot ID</th>
+                                    <th class="pb-3 px-2">Image</th>
+                                    <th class="pb-3 px-2">Item</th>
+                                    <th class="pb-3 px-2">Prices</th>
+                                    <th class="pb-3 px-2 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-list" class="text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= ERROR VIEW ================= -->
+        <div id="error-view" class="hidden text-center max-w-md">
+            <i class="fa-solid fa-box-open text-gray-500 text-6xl mb-4"></i>
+            <h2 class="text-2xl font-bold text-white mb-2">Slot Empty</h2>
+            <p class="text-gray-400 mb-6" id="error-message">This slot is empty or QR code is invalid.</p>
+            <a href="explore.html" class="gold-text underline hover:text-white">Explore Full Collection</a>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-black py-4 mt-auto text-center text-gray-500 text-xs border-t border-gray-800 w-full z-50">
+        &copy; 2026 Brothers Collection. <br class="md:hidden">Powered by <a href="https://www.bigiview.com" target="_blank" class="gold-text hover:text-white transition font-semibold tracking-wider">BiGiView</a>
+    </footer>
+
+    <!-- JS & Firebase Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, setDoc, onSnapshot, doc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let db, auth, productsRef;
+        const urlParams = new URLSearchParams(window.location.search);
+        const rackIdParam = urlParams.get('id');
+        const isAdmin = urlParams.get('admin') === 'true';
+        let timerInterval;
+
+        const views = {
+            loading: document.getElementById('loading-view'),
+            login: document.getElementById('login-view'),
+            product: document.getElementById('product-view'),
+            admin: document.getElementById('admin-view'),
+            error: document.getElementById('error-view')
+        };
+
+        function showView(viewName) {
+            Object.values(views).forEach(v => v.classList.add('hidden'));
+            if(views[viewName]) views[viewName].classList.remove('hidden');
+        }
+
+        async function initFirebase() {
+            try {
+                // Aapka Firebase Config
+                const firebaseConfig = {
+                    apiKey: "AIzaSyBvNxrjrkWTszxiZnORzCE8ds8dfQzrUPc",
+                    authDomain: "brothercollectionuk.firebaseapp.com",
+                    projectId: "brothercollectionuk",
+                    storageBucket: "brothercollectionuk.firebasestorage.app",
+                    messagingSenderId: "683457631597",
+                    appId: "1:683457631597:web:c86abb6ced291026c4f664"
+                };
+                
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                productsRef = collection(db, 'products');
+
+                // Update UI on successful connection
+                document.getElementById('header-status').innerHTML = '<i class="fa-solid fa-circle text-green-500 text-xs animate-pulse"></i> System Live';
+
+                if (isAdmin) {
+                    onAuthStateChanged(auth, (user) => {
+                        if (user) {
+                            initAdmin();
+                            showView('admin');
+                        } else {
+                            showView('login');
+                        }
+                    });
+                } else if (rackIdParam) {
+                    loadProduct(rackIdParam);
+                } else {
+                    document.getElementById('header-status').innerHTML = '<i class="fa-solid fa-circle text-gray-500 text-xs"></i> Ready';
+                    document.getElementById('error-message').innerHTML = "Welcome to Brothers Collection.<br>Please scan a valid QR code.";
+                    showView('error');
+                }
+            } catch (error) {
+                console.error("Firebase init failed:", error);
+                document.getElementById('header-status').innerHTML = '<i class="fa-solid fa-circle text-red-500 text-xs"></i> Connection Error';
+                showView('error');
+            }
+        }
+
+        // ================= TIMER & LOGIC =================
+        function getDynamicOfferName() {
+            const today = new Date();
+            const date = today.getDate();
+            const month = today.getMonth() + 1; // 1-12
+            const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            
+            if (month === 1 && date === 1) return "New Year Special Offer";
+            if (month === 1 && date === 26) return "Republic Day Sale";
+            if (month === 2 && date === 14) return "Valentine's Special Offer";
+            if (month === 5 && (date >= 8 && date <= 14) && today.getDay() === 0) return "Mother's Day Special Offer"; 
+            if (month === 8 && date === 15) return "Independence Day Sale";
+            if (month === 10 && date === 31) return "Halloween Special Offer";
+            if (month === 12 && date === 25) return "Christmas Special Offer";
+            
+            return `${days[today.getDay()]} Flash Sale`;
+        }
+
+        function setExpiredState() {
+            // Offer ke naam ke aage "- Ended" lagana
+            const baseOfferName = getDynamicOfferName();
+            document.getElementById('offer-name').innerHTML = `<i class="fa-solid fa-fire-extinguisher text-gray-500 mr-1"></i> <span class="text-gray-400 line-through">${baseOfferName}</span> <span class="text-red-500 ml-1">- Ended</span>`;
+            document.getElementById('offer-timer').style.display = 'none';
+            document.getElementById('timer-icon').style.display = 'none';
+            document.getElementById('offer-warning').style.display = 'none';
+            
+            document.getElementById('offer-container').classList.replace('bg-red-900/20', 'bg-gray-800');
+            document.getElementById('offer-container').classList.replace('border-red-500/30', 'border-gray-600');
+            document.getElementById('offer-container').classList.remove('hidden');
+
+            // Prices chupana aur MRP ko main banana
+            document.getElementById('p-showroom-price').style.display = 'none';
+            document.getElementById('p-discount-badge').style.display = 'none';
+            document.getElementById('mrp-label').style.display = 'none';
+            
+            const actualEl = document.getElementById('p-actual-price');
+            actualEl.classList.remove('line-through', 'text-gray-500', 'text-lg');
+            actualEl.classList.add('text-3xl', 'font-bold', 'gold-text');
+        }
+
+        function handleTimer(productId, actualPrice, showroomPrice) {
+            const todayStr = new Date().toDateString();
+            const storageKey = `timer_${productId}`;
+            let storedData = JSON.parse(localStorage.getItem(storageKey));
+
+            // Agar data nahi hai, ya kisi pichle din ka hai
+            if (!storedData || storedData.date !== todayStr) {
+                // Generate random seconds: 10 mins (600s) to 13 mins (780s)
+                const randomSeconds = Math.floor(Math.random() * (780 - 600 + 1)) + 600;
+                storedData = {
+                    expiryTime: Date.now() + (randomSeconds * 1000),
+                    date: todayStr
+                };
+                localStorage.setItem(storageKey, JSON.stringify(storedData));
+            }
+
+            const checkTime = () => {
+                const timeLeft = storedData.expiryTime - Date.now();
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    setExpiredState();
+                } else {
+                    document.getElementById('offer-name').innerHTML = `<i class="fa-solid fa-fire text-accent mr-1"></i> <span>${getDynamicOfferName()}</span>`;
+                    document.getElementById('offer-container').classList.remove('hidden');
+                    
+                    const m = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                    const s = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                    document.getElementById('offer-timer').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                }
+            };
+
+            timerInterval = setInterval(checkTime, 1000);
+            checkTime(); // First run immediate
+        }
+
+        // ================= CUSTOMER LOGIC =================
+        async function loadProduct(id) {
+            try {
+                const cleanId = id.trim().toUpperCase();
+                const docSnap = await getDoc(doc(productsRef, cleanId));
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    document.getElementById('p-rack-id').innerText = cleanId;
+                    document.getElementById('p-image').src = data.image || '';
+                    document.getElementById('p-title').innerText = data.name;
+                    document.getElementById('p-showroom-price').innerText = `₹${data.showroomPrice}`;
+                    document.getElementById('p-actual-price').innerText = `₹${data.actualPrice}`;
+                    document.getElementById('p-description').innerText = data.description;
+
+                    const actual = parseFloat(data.actualPrice);
+                    const showroom = parseFloat(data.showroomPrice);
+                    
+                    if(actual > showroom && actual > 0) {
+                        const discount = Math.round(((actual - showroom) / actual) * 100);
+                        document.getElementById('p-discount-badge').innerText = `${discount}% OFF`;
+                        document.getElementById('p-discount-badge').style.display = 'block';
+                        
+                        // Start custom logic
+                        handleTimer(cleanId, actual, showroom);
+                    } else {
+                        document.getElementById('p-discount-badge').style.display = 'none';
+                    }
+
+                    showView('product');
+                } else {
+                    showView('error');
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                showView('error');
+            }
+        }
+
+        // ================= ADMIN LOGIC =================
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            const errorMsg = document.getElementById('login-error');
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+                errorMsg.classList.add('hidden');
+            } catch (error) {
+                errorMsg.classList.remove('hidden');
+                errorMsg.innerText = "Wrong Email or Password.";
+            }
+        });
+
+        window.logoutAdmin = async function() {
+            await signOut(auth);
+            window.location.reload();
+        }
+
+        // Image Compression
+        const imageFileInput = document.getElementById('a-image-file');
+        const imageBase64Input = document.getElementById('a-image-base64');
+        const imagePreview = document.getElementById('image-preview');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+
+        imageFileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function(e) {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width, height = img.height;
+                    const MAX = 800;
+                    if (width > height) { if (width > MAX) { height *= MAX / width; width = MAX; } } 
+                    else { if (height > MAX) { width *= MAX / height; height = MAX; } }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    imageBase64Input.value = dataUrl;
+                    imagePreview.src = dataUrl;
+                    imagePreviewContainer.classList.remove('hidden');
+                }
+            }
+        });
+
+        let allProducts = [];
+        function initAdmin() {
+            document.getElementById('product-form').addEventListener('submit', handleFormSubmit);
+            onSnapshot(productsRef, (snapshot) => {
+                allProducts = [];
+                snapshot.forEach((doc) => allProducts.push({ id: doc.id, ...doc.data() }));
+                allProducts.sort((a, b) => a.id.localeCompare(b.id, undefined, {numeric: true}));
+                renderInventory();
+            });
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const rawId = document.getElementById('a-rack-id').value;
+            const rackId = rawId.trim().toUpperCase().replace(/\s+/g, '-');
+            const imageData = document.getElementById('a-image-base64').value;
+            if (!imageData) return alert("Please select a photo.");
+            
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.innerText = "Saving..."; btn.disabled = true;
+
+            try {
+                await setDoc(doc(productsRef, rackId), {
+                    name: document.getElementById('a-name').value,
+                    image: imageData,
+                    actualPrice: Number(document.getElementById('a-actual-price').value),
+                    showroomPrice: Number(document.getElementById('a-showroom-price').value),
+                    description: document.getElementById('a-description').value,
+                    updatedAt: new Date().toISOString()
+                });
+                resetForm();
+            } catch (error) {
+                alert("Error saving data.");
+            } finally {
+                btn.innerText = "Save"; btn.disabled = false;
+            }
+        }
+
+        window.editProduct = function(id) {
+            const p = allProducts.find(x => x.id === id);
+            if (!p) return;
+            const idInput = document.getElementById('a-rack-id');
+            idInput.value = p.id; idInput.readOnly = true; idInput.classList.add('opacity-50');
+            document.getElementById('a-name').value = p.name;
+            document.getElementById('a-actual-price').value = p.actualPrice;
+            document.getElementById('a-showroom-price').value = p.showroomPrice;
+            document.getElementById('a-description').value = p.description;
+            document.getElementById('a-image-base64').value = p.image;
+            document.getElementById('image-preview').src = p.image;
+            document.getElementById('image-preview-container').classList.remove('hidden');
+            document.getElementById('form-title').innerHTML = '<i class="fa-solid fa-pen mr-2"></i> Update Slot';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        window.deleteProduct = async function(id) {
+            if (confirm(`Empty Slot ${id}? QR code will show empty.`)) {
+                await deleteDoc(doc(productsRef, id));
+            }
+        }
+
+        window.resetForm = function() {
+            document.getElementById('product-form').reset();
+            const idInput = document.getElementById('a-rack-id');
+            idInput.readOnly = false; idInput.classList.remove('opacity-50');
+            document.getElementById('a-image-base64').value = '';
+            document.getElementById('image-preview-container').classList.add('hidden');
+            document.getElementById('form-title').innerHTML = '<i class="fa-solid fa-plus-circle mr-2"></i> Setup Slot';
+        }
+
+        window.copyQRLink = function(id) {
+            const link = `${window.location.href.split('?')[0]}?id=${id}`;
+            navigator.clipboard.writeText(link).then(() => alert(`Copied Link for ${id}!`));
+        }
+
+        function renderInventory() {
+            const tbody = document.getElementById('inventory-list');
+            document.getElementById('product-count').innerText = `${allProducts.length} Items`;
+            if (allProducts.length === 0) return tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-500">No slots active.</td></tr>`;
+            
+            tbody.innerHTML = allProducts.map(p => `
+                <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+                    <td class="py-3 px-2">
+                        <span class="bg-black border border-accent/50 text-accent font-bold px-2 py-1 rounded text-[10px] uppercase tracking-wider">${p.id}</span>
+                    </td>
+                    <td class="py-3 px-2"><img src="${p.image}" class="w-10 h-10 object-cover rounded bg-white"></td>
+                    <td class="py-3 px-2 font-semibold text-gray-300 max-w-[120px] truncate text-xs">${p.name}</td>
+                    <td class="py-3 px-2">
+                        <div class="flex flex-col">
+                            <span class="gold-text font-bold text-sm">₹${p.showroomPrice}</span>
+                            <span class="text-[10px] text-gray-500 line-through">₹${p.actualPrice}</span>
+                        </div>
+                    </td>
+                    <td class="py-3 px-2 text-center">
+                        <div class="flex justify-center gap-2">
+                            <button onclick="copyQRLink('${p.id}')" class="w-7 h-7 rounded bg-blue-900/50 text-blue-400 hover:bg-blue-600 hover:text-white transition" title="Copy QR Link"><i class="fa-solid fa-qrcode text-xs"></i></button>
+                            <button onclick="editProduct('${p.id}')" class="w-7 h-7 rounded bg-gray-700 text-gray-300 hover:bg-gray-500 transition"><i class="fa-solid fa-pen text-xs"></i></button>
+                            <button onclick="deleteProduct('${p.id}')" class="w-7 h-7 rounded bg-red-900/30 text-red-400 hover:bg-red-600 hover:text-white transition"><i class="fa-solid fa-trash text-xs"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.addEventListener('DOMContentLoaded', initFirebase);
+    </script>
+</body>
+</html>

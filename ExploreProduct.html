@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brothers Collection | All Products</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { primary: '#111111', accent: '#d4af37', light: '#fafafa', darkgray: '#222222' },
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #111; color: #fafafa; }
+        .gold-text { color: #d4af37; }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #d4af37;
+            border-radius: 50%; width: 50px; height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .product-card {
+            background: #1a1a1a;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            transition: all 0.3s ease;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            border-color: #d4af37;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans">
+
+    <!-- Header -->
+    <header class="bg-black py-4 px-6 border-b border-accent/30 shadow-lg sticky top-0 z-50 flex justify-between items-center z-50">
+        <a href="index.html" class="text-xl md:text-2xl font-bold uppercase tracking-wider flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
+            <i class="fa-solid fa-crown gold-text"></i>
+            <span>Brothers <span class="gold-text">Collection</span></span>
+        </a>
+    </header>
+
+    <main class="flex-grow p-6 max-w-6xl mx-auto w-full">
+        
+        <div class="mb-8 text-center mt-4">
+            <h1 class="text-3xl font-bold text-white mb-2">Explore the <span class="gold-text">Collection</span></h1>
+            <p class="text-gray-400">Discover our premium range of fashion and footwear.</p>
+        </div>
+
+        <!-- Loading View -->
+        <div id="loading-view" class="flex flex-col items-center justify-center gap-4 py-20">
+            <div class="spinner"></div>
+            <p class="gold-text animate-pulse font-semibold">Loading Collection...</p>
+        </div>
+
+        <!-- Filters & Sort -->
+        <div id="filter-bar" class="hidden flex justify-between items-center mb-6 bg-darkgray/50 p-4 rounded-lg border border-gray-800">
+            <h2 class="text-lg font-bold text-white"><i class="fa-solid fa-list-ul mr-2 gold-text"></i>All Items</h2>
+            <div class="flex items-center gap-2">
+                <label for="sort-select" class="text-sm text-gray-400 hidden sm:block">Sort By:</label>
+                <select id="sort-select" class="bg-black border border-gray-700 text-white text-sm rounded p-2 focus:border-accent focus:outline-none cursor-pointer">
+                    <option value="default">Default</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
+                    <option value="disc-desc">Discount: High to Low</option>
+                    <option value="disc-asc">Discount: Low to High</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        <div id="products-grid" class="hidden grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            <!-- Injected by JS -->
+        </div>
+
+        <div id="empty-state" class="hidden text-center py-20 text-gray-500">
+            <i class="fa-solid fa-box-open text-5xl mb-4"></i>
+            <p>No products available right now.</p>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-black py-6 mt-auto text-center text-gray-500 text-sm border-t border-gray-800">
+        &copy; 2026 Brothers Collection. <br class="md:hidden">Powered by <a href="https://www.bigiview.com" target="_blank" class="gold-text hover:text-white transition font-semibold tracking-wider">BiGiView</a>
+    </footer>
+
+    <!-- JS & Firebase Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let allProducts = [];
+
+        async function loadCollection() {
+            try {
+                const firebaseConfig = {
+                    apiKey: "AIzaSyBvNxrjrkWTszxiZnORzCE8ds8dfQzrUPc",
+                    authDomain: "brothercollectionuk.firebaseapp.com",
+                    projectId: "brothercollectionuk",
+                    storageBucket: "brothercollectionuk.firebasestorage.app",
+                    messagingSenderId: "683457631597",
+                    appId: "1:683457631597:web:c86abb6ced291026c4f664"
+                };
+                
+                const app = initializeApp(firebaseConfig);
+                const db = getFirestore(app);
+                
+                const querySnapshot = await getDocs(collection(db, "products"));
+                document.getElementById('loading-view').classList.add('hidden');
+                
+                if (querySnapshot.empty) {
+                    document.getElementById('empty-state').classList.remove('hidden');
+                    return;
+                }
+
+                allProducts = [];
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const discount = (data.actualPrice > data.showroomPrice && data.actualPrice > 0) 
+                        ? Math.round(((data.actualPrice - data.showroomPrice) / data.actualPrice) * 100) 
+                        : 0;
+                    
+                    allProducts.push({
+                        id: doc.id,
+                        ...data,
+                        discount: discount
+                    });
+                });
+
+                document.getElementById('filter-bar').classList.remove('hidden');
+                document.getElementById('products-grid').classList.remove('hidden');
+                
+                renderProducts(allProducts);
+
+            } catch (error) {
+                console.error("Error loading collection:", error);
+                document.getElementById('loading-view').innerHTML = `<p class="text-red-500"><i class="fa-solid fa-circle-exclamation"></i> Error loading products.</p>`;
+            }
+        }
+
+        function renderProducts(products) {
+            let html = '';
+            products.forEach((data) => {
+                html += `
+                    <div class="product-card rounded-xl overflow-hidden cursor-pointer flex flex-col" onclick="window.location.href='qr.html?id=${data.id}'">
+                        <div class="h-48 md:h-56 bg-white relative p-4 flex items-center justify-center">
+                            ${data.discount > 0 ? `<div class="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded shadow">${data.discount}% OFF</div>` : ''}
+                            <img src="${data.image}" alt="${data.name}" class="max-w-full max-h-full object-contain">
+                        </div>
+                        <div class="p-4 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-white font-semibold text-sm md:text-base mb-1 line-clamp-2" title="${data.name}">${data.name}</h3>
+                            </div>
+                            <div class="flex items-end gap-2 mt-3 pt-2 border-t border-gray-800">
+                                <span class="gold-text font-bold text-lg">₹${data.showroomPrice}</span>
+                                ${data.actualPrice > data.showroomPrice ? `<span class="text-xs text-gray-500 line-through mb-1">₹${data.actualPrice}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('products-grid').innerHTML = html;
+        }
+
+        // Sorting Logic
+        document.getElementById('sort-select').addEventListener('change', function(e) {
+            const val = e.target.value;
+            let sortedProducts = [...allProducts];
+
+            if (val === 'price-asc') {
+                sortedProducts.sort((a, b) => a.showroomPrice - b.showroomPrice);
+            } else if (val === 'price-desc') {
+                sortedProducts.sort((a, b) => b.showroomPrice - a.showroomPrice);
+            } else if (val === 'disc-desc') {
+                sortedProducts.sort((a, b) => b.discount - a.discount);
+            } else if (val === 'disc-asc') {
+                sortedProducts.sort((a, b) => a.discount - b.discount);
+            }
+
+            renderProducts(sortedProducts);
+        });
+
+        window.addEventListener('DOMContentLoaded', loadCollection);
+    </script>
+</body>
+</html>
