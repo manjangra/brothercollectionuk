@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brothers Collection | Explore Products</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#111111',
+                        accent: '#d4af37', 
+                        darkgray: '#222222'
+                    },
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #111; color: #fafafa; }
+        .gold-text { color: #d4af37; }
+        .glass-panel {
+            background: rgba(34, 34, 34, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans">
+
+    <!-- Header -->
+    <header class="bg-black py-4 px-6 border-b border-accent/30 shadow-lg sticky top-0 z-50 flex justify-between items-center">
+        <a href="https://brothers.bigiview.com" class="text-2xl font-bold uppercase tracking-wider flex items-center gap-3 hover:opacity-80 transition">
+            <i class="fa-solid fa-crown gold-text"></i>
+            <span>Brothers <span class="gold-text">Collection</span></span>
+        </a>
+    </header>
+
+    <main class="flex-grow p-6 max-w-7xl mx-auto w-full">
+        
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <h1 class="text-3xl font-bold text-white border-l-4 border-accent pl-4">Explore Our Range</h1>
+            
+            <!-- Sorting Dropdown -->
+            <div class="flex items-center gap-2 bg-darkgray px-4 py-2 rounded-lg border border-gray-700">
+                <i class="fa-solid fa-sort text-accent"></i>
+                <select id="sort-select" class="bg-transparent text-sm text-white focus:outline-none cursor-pointer">
+                    <option value="default" class="bg-darkgray">Sort By: Default</option>
+                    <option value="price-low" class="bg-darkgray">Price: Low to High</option>
+                    <option value="price-high" class="bg-darkgray">Price: High to Low</option>
+                    <option value="disc-high" class="bg-darkgray">Discount: High to Low</option>
+                    <option value="disc-low" class="bg-darkgray">Discount: Low to High</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="loading" class="text-center py-10">
+            <i class="fa-solid fa-circle-notch fa-spin text-4xl gold-text mb-4"></i>
+            <p class="text-gray-400">Loading premium collection...</p>
+        </div>
+
+        <!-- Product Grid -->
+        <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <!-- Cards injected via JS -->
+        </div>
+
+    </main>
+    
+    <!-- Footer Branding -->
+    <footer class="bg-black text-center py-4 border-t border-gray-800 text-xs text-gray-500">
+        Powered by <a href="https://www.bigiview.com" target="_blank" class="gold-text font-bold hover:underline">BiGiView</a>
+    </footer>
+
+    <!-- Firebase Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // User Provided Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvNxrjrkWTszxiZnORzCE8ds8dfQzrUPc",
+            authDomain: "brothercollectionuk.firebaseapp.com",
+            projectId: "brothercollectionuk",
+            storageBucket: "brothercollectionuk.firebasestorage.app",
+            messagingSenderId: "683457631597",
+            appId: "1:683457631597:web:c86abb6ced291026c4f664"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        let allProducts = [];
+
+        async function fetchProducts() {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'products'));
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    
+                    // Calculation for sorting
+                    const actual = parseFloat(data.actualPrice);
+                    const showroom = parseFloat(data.showroomPrice);
+                    let discountPercent = 0;
+                    if(actual > showroom && actual > 0) {
+                        discountPercent = Math.round(((actual - showroom) / actual) * 100);
+                    }
+                    
+                    allProducts.push({
+                        id: doc.id,
+                        ...data,
+                        discountPercent: discountPercent
+                    });
+                });
+                document.getElementById('loading').style.display = 'none';
+                renderProducts(allProducts);
+            } catch (error) {
+                console.error("Error loading products:", error);
+                document.getElementById('loading').innerHTML = `<p class="text-red-500">Failed to load products.</p>`;
+            }
+        }
+
+        function renderProducts(productsList) {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+            
+            if (productsList.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">Koi product nahi mila. Admin panel se naye products add karein.</div>';
+                return;
+            }
+
+            const todayStr = new Date().toDateString();
+
+            productsList.forEach(p => {
+                // ================= LOCAL STORAGE TIMER CHECK =================
+                // Check if user has already scanned and timer has expired today
+                let isExpired = false;
+                let expiryTime = localStorage.getItem(`bc_offer_expiry_${p.id}`);
+                let storedDate = localStorage.getItem(`bc_offer_date_${p.id}`);
+
+                if (storedDate === todayStr && expiryTime) {
+                    if (Date.now() >= parseInt(expiryTime)) {
+                        isExpired = true; // Timer khatam ho chuka hai!
+                    }
+                }
+
+                // Decide which price to show based on expiry
+                const displayPrice = isExpired ? p.actualPrice : p.showroomPrice;
+                
+                // Show old MRP slashed only if not expired and actual > showroom
+                let oldPriceHtml = '';
+                let badgeHtml = '';
+                
+                if (!isExpired && p.discountPercent > 0) {
+                    oldPriceHtml = `<span class="text-xs text-gray-500 line-through ml-2">₹${p.actualPrice}</span>`;
+                    badgeHtml = `
+                        <div class="absolute top-2 right-2 bg-red-600 text-white font-bold px-2 py-1 rounded text-xs shadow-lg">
+                            ${p.discountPercent}% OFF
+                        </div>
+                    `;
+                }
+
+                // Render Card (Slot ID Hataya Gaya Hai)
+                const card = `
+                    <div onclick="window.location.href='qr.html?id=${p.id}'" class="glass-panel rounded-xl overflow-hidden cursor-pointer transform transition hover:-translate-y-2 hover:shadow-2xl group border border-gray-800 hover:border-accent">
+                        <div class="relative h-48 bg-white p-2">
+                            <img src="${p.image}" class="w-full h-full object-contain group-hover:scale-105 transition duration-500">
+                            ${badgeHtml}
+                        </div>
+                        <div class="p-4">
+                            <h3 class="text-white font-semibold text-sm mb-2 truncate">${p.name}</h3>
+                            <div class="flex items-end">
+                                <span class="gold-text font-bold text-xl">₹${displayPrice}</span>
+                                ${oldPriceHtml}
+                            </div>
+                            ${isExpired ? '<span class="text-[10px] text-red-500 block mt-1"><i class="fa-solid fa-clock-rotate-left"></i> Offer Ended</span>' : ''}
+                        </div>
+                    </div>
+                `;
+                grid.innerHTML += card;
+            });
+        }
+
+        // Sorting Logic
+        document.getElementById('sort-select').addEventListener('change', (e) => {
+            const val = e.target.value;
+            let sorted = [...allProducts];
+            
+            if(val === 'price-low') sorted.sort((a,b) => a.showroomPrice - b.showroomPrice);
+            else if(val === 'price-high') sorted.sort((a,b) => b.showroomPrice - a.showroomPrice);
+            else if(val === 'disc-high') sorted.sort((a,b) => b.discountPercent - a.discountPercent);
+            else if(val === 'disc-low') sorted.sort((a,b) => a.discountPercent - b.discountPercent);
+            
+            renderProducts(sorted);
+        });
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', fetchProducts);
+    </script>
+</body>
+</html>
